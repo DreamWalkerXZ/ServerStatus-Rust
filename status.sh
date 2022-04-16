@@ -83,7 +83,7 @@ function install_tool() {
     yum -y install unzip wget
   elif [[ ${release} == "deb" ]]; then
     apt -y update
-    apt -y install unzip wget
+    apt -y install unzip wget vnstat
   fi
 }
 
@@ -147,7 +147,7 @@ User=root
 Group=root
 Environment="RUST_BACKTRACE=1"
 WorkingDirectory=/usr/local/ServerStatus
-ExecStart=/usr/local/ServerStatus/client/stat_client -a "${PROTOCOL}://${MASTER}" -u ${USER} -p ${PASSWD}
+ExecStart=/usr/local/ServerStatus/client/stat_client -a "${PROTOCOL}://${MASTER}" -u ${USER} -p ${PASSWD} -n
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
