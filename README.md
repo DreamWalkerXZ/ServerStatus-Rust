@@ -11,10 +11,15 @@
 - [Rust 版 ServerStatus 云探针](#rust-版-serverstatus-云探针)
   - [1.介绍](#1介绍)
   - [2.快速部署](#2快速部署)
+    - [2.1 快速体验](#21-快速体验)
+    - [2.2 服务管理脚本部署，感谢 @Colsro 提供](#22-服务管理脚本部署感谢-colsro-提供)
+    - [2.3 Railway 部署](#23-railway-部署)
   - [3.服务端说明](#3服务端说明)
     - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
     - [3.2 服务端运行](#32-服务端运行)
   - [4.客户端说明](#4客户端说明)
+    - [4.1 Linux (`CentOS`, `Ubuntu`, `Debian`)](#41-linux-centos-ubuntu-debian)
+    - [4.2 跨平台版本 (Window, Linux, etc)](#42-跨平台版本-window-linux-etc)
   - [5.开启 `vnstat` 支持](#5开启-vnstat-支持)
   - [6.FAQ](#6faq)
   - [7.相关项目](#7相关项目)
@@ -28,7 +33,6 @@
 - 支持 `http` 协议上报，可配合 `cf` 等优化上报链路
 - 支持 `railway` 快速部署
 - 支持 `systemd`, 开机自启
-- 更小 `docker` 镜像
 
 演示：https://tz-rust.vercel.app
 | 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
@@ -36,6 +40,7 @@
 
 ## 2.快速部署
 
+### 2.1 快速体验
 ```bash
 # for x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
@@ -46,10 +51,57 @@ bash -ex one-touch.sh
 # 自定义部署可参照 one-touch.sh 脚本
 ```
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
+### 2.2 服务管理脚本部署，感谢 [@Colsro](https://github.com/Colsro) 提供
+<details>
+  <summary>管理脚本使用说明</summary>
+
+```bash
+# 下载脚本
+wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
+
+# 安装 服务端
+bash status.sh -i -s
+
+# 安装 客户端
+bash status.sh -i -c
+# or
+bash status.sh -i -c protocol://username:password@master:port
+# eg:
+bash status.sh -i -c tcp://h1:p1@127.0.0.1:34512
+bash status.sh -i -c http://h1:p1@127.0.0.1:8080
+
+# 更多用法：
+❯ bash status.sh
+
+help:
+    -i,--install    安装 Status
+        -i -s           安装 Server
+        -i -c           安装 Client
+        -i -c conf      自动安装 Client
+    -u,--uninstall  卸载 Status
+        -u -s           卸载 Server
+        -u -c           卸载 Client
+    -r,--reset      更改 Status 配置
+        -r          更改 Client 配置
+        -r conf         自动更改 Client配置
+    -s,--server     管理 Status 运行状态
+        -s {start|stop|restart}
+    -c,--client     管理 Client 运行状态
+        -c {start|stop|restart}
+
+若无法访问 Github:
+    CN=true bash status.sh args
+# 可能有点用
+```
+</details>
+
+
+### 2.3 Railway 部署
 
 懒得配置 `Nginx`，`SSL` 证书？试试
 [在 Railway 部署 Server 教程](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
 ## 3.服务端说明
 
@@ -101,14 +153,11 @@ custom_tpl = """
 ### 3.2 服务端运行
 ```bash
 # systemd 方式， 参照 one-touch.sh 脚本 (推荐)
-systemctl enable stat_server
-systemctl start stat_server
 
-# 看看可用参数
+# 手动方式
+# help
 ./stat_server -h
 # 手动运行
-./stat_server
-# 或
 ./stat_server -c config.toml
 # 或
 RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
@@ -128,20 +177,22 @@ docker-compose up -d
 
 ## 4.客户端说明
 
+### 4.1 Linux (`CentOS`, `Ubuntu`, `Debian`)
 ```bash
 # 公网环境建议 nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
+# Rust 版只在 CentOS, Ubuntu, Debian 测试通过
+# 如果 Rust 版客户端在你的系统无法使用，请切换到下面 4.2 跨平台版本
 
-## systemd 方式， 参照 one-touch.sh 脚本 (推荐)
-systemctl enable stat_client
-systemctl start stat_client
+# systemd 方式， 参照 one-touch.sh 脚本 (推荐)
 
+# 手动方式
 # Rust 版本 Client
 ./stat_client -h
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
 # 或
 ./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
-# Python 版本 Client 依赖安装
+# Python 版本 Client 依赖安装 (不再推荐使用，其它平台请使用 4.2 跨平台版本)
 ## Centos
 sudo yum -y install epel-release
 sudo yum -y install python3-pip gcc python3-devel
@@ -151,12 +202,27 @@ sudo python3 -m pip install psutil requests
 sudo apt -y install python3-pip
 sudo python3 -m pip install psutil requests
 
-## 手动运行
 wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/client-linux.py'
 python3 client-linux.py -h
-python3 client-linux.py -a "tcp://127.0.0.1:34512" -u h1 -p p1
-# 或
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
+```
+
+### 4.2 跨平台版本 (Window, Linux, etc)
+
+```bash
+## for Alpine linux
+apk add wget python3 py3-pip gcc python3-dev musl-dev linux-headers
+python3 -m pip install psutil requests
+wget --no-check-certificate -qO stat_client.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/stat_client.py'
+
+## for Windows
+# 安装 python 3.10 版本，并设置环境变量
+# 命令行执行 pip install psutil requests
+# 下载 https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/stat_client.py
+
+pip install psutil requests
+python3 stat_client.py -h
+python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 ```
 
 ## 5.开启 `vnstat` 支持
@@ -280,4 +346,3 @@ OPTIONS:
 ## 7.相关项目
 - https://github.com/cppla/ServerStatus
 - https://github.com/BotoX/ServerStatus
-
